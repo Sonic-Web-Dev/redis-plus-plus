@@ -254,6 +254,9 @@ Node ShardsPool::_parse_node(redisReply *reply) const {
     auto host = reply::parse<std::string>(*(reply->element[0]));
     auto port = static_cast<int>(reply::parse<long long>(*(reply->element[1])));
 
+    if (host.empty()) {
+        host = _connection_opts.host;
+    }
     return {host, port};
 }
 
@@ -371,8 +374,13 @@ ConnectionOptions ShardsPool::_connection_options(Slot slot) {
 
 auto ShardsPool::_add_node(const Node &node) -> NodeMap::iterator {
     auto opts = _connection_opts;
-    opts.host = node.host;
-    opts.port = node.port;
+    
+    if (node.host.empty()) {
+        opts.port = node.port;
+    } else {
+        opts.host = node.host;
+        opts.port = node.port;
+    }
 
     // TODO: Better set readonly an attribute of `Node`.
     if (_role == Role::SLAVE) {
@@ -419,3 +427,4 @@ void ShardsPool::_do_async_update() {
 }
 
 }
+
